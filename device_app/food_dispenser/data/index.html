@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+	<title>Food Dispenser</title>
+</head>
+<body>
+	<div class="container">
+		<br>
+		<h1>Food Dispenser</h1>
+		<div class="card">
+			<div class="card-header">
+				<h5 class="card-title">Parameters</h5>
+			</div>
+			<ul class="list-group list-group-flush">
+				<li class="list-group-item">
+					<div class="fw-bold">Current Weight: </div>
+					<p id="weight"></p>
+				</li>
+				<li class="list-group-item">
+					<div class="fw-bold">Min Weight: </div>
+					<p id="min_weight"></p>
+				</li>
+				<li class="list-group-item">
+					<div class="fw-bold">Max Weight: </div>
+					<p id="max_weight"></p>
+				</li>
+				<li class="list-group-item">
+					<div class="fw-bold">Device IP Address: </div>
+					<p id="ip_address"></p>
+				</li>
+				<li class="list-group-item">
+					<div class="fw-bold">Calibration Weight: 130 g </div>
+					<p id="calibration_weight"></p>
+				</li>
+			</ul>
+			<div class="card-footer">
+				<button class="btn btn-lg btn-danger" id="btnGiveFood">Give Food!</button>
+				<button class="btn btn-lg btn-primary" id="btnSetZeroOffset">Set Zero Offset</button>
+				<button class="btn btn-lg btn-info" id="btnCalibrate">Calibrate</button>
+			</div>
+		</div>
+		<div class="position-fixed bottom-0 end-0 p-3">
+			<div id="workingToast" class="toast">
+				<div class="toast-header">
+					<strong class="me-auto">Food Dispenser</strong>
+					<button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+				</div>
+				<div class="toast-body">
+					Done!
+				</div>
+			</div>
+		</div>
+	</div>
+	</div>
+	<script type="module">
+		let gateway = `ws://${window.location.hostname}/ws`;
+		let websocket;
+		window.addEventListener('load', onLoad);
+		function initWs() {
+			websocket = new WebSocket(gateway);
+			websocket.onclose = onClose;
+			websocket.onmessage = onMessage;
+		}
+		function onClose(event) {
+			setTimeout(initWs, 2000);
+		}
+		function onMessage(event) {
+			let res = JSON.parse(event.data);
+			document.getElementById('weight').innerHTML = res.weight;
+			document.getElementById('ip_address').innerHTML = res.ip_address;
+			document.getElementById('calibration_weight').innerHTML = res.calibration_weight;
+			document.getElementById('min_weight').innerHTML = res.calibration_weight;
+			document.getElementById('max_weight').innerHTML = res.max_weight;
+		}
+		function openToast(toastName) {
+			let myToastEl = document.getElementById(toastName)
+			let toast = bootstrap.Toast.getOrCreateInstance(myToastEl)
+			toast.show()
+		}
+		function sendReq(endpointName) {
+				let request = new XMLHttpRequest();
+				request.onreadystatechange = function () {
+					if (this.readyState == 4 && this.status == 200) {
+						openToast('workingToast');
+					}					
+					if (this.readyState == 4 && this.status != 200) {
+						openToast('errorToast');
+					}
+				};
+				request.open("POST", `${endpointName}`, true);
+				request.send();
+			}
+		function onLoad(event) {
+			initWs();
+			document.getElementById("btnGiveFood").addEventListener("click", function () {sendReq('dispense_food');});
+			document.getElementById("btnCalibrate").addEventListener("click", function () { sendReq('calibrate');});
+			document.getElementById("btnSetZeroOffset").addEventListener("click", function(){ sendReq('zero_offset'); });
+		}
+	</script>
+</body>
+</html>
